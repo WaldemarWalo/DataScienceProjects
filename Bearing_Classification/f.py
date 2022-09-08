@@ -25,3 +25,20 @@ def get_axes(row_count=1, col_count=1, size_ratio = 1, w_aspect = 1) -> np.ndarr
         axs = axs.reshape(len(axs), 1)
         
     return axs
+
+
+import pickle
+from pathlib import Path
+
+def to_pkl(obj:any, file_name: str, overwrite:bool = False) -> None:
+    file_path = Path(file_name)
+    if file_path.exists() and not overwrite:
+        raise Exception(f'file already exits, set overwrite=True. File path {file_path}')
+    file_path.parents[0].mkdir(parents=True, exist_ok=True)
+    
+    with open(file_name, 'wb') as file:
+        pickle.dump(obj, file)
+        
+def from_pkl(file_name):
+    with open(file_name, 'rb') as file:
+        return pickle.load(file)
