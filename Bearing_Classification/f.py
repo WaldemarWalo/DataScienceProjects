@@ -17,6 +17,7 @@ def get_axes(row_count=1, col_count=1, size_ratio = 1, w_aspect = 1) -> np.ndarr
     fig_w = (max_width / 72 * size_ratio)
     fig_h = ((row_count/col_count) * 1080 / 72 * size_ratio / w_aspect)
     fig, axs = plt.subplots(row_count, col_count, figsize=(fig_w, fig_h), layout='constrained');
+    # print((fig_w, fig_h))
     
     # ensure we are returning an ndarray with 2d shape
     if not isinstance(axs, np.ndarray):
