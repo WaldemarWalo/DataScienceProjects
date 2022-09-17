@@ -58,8 +58,17 @@ def get_stats_df(cv_results):
         result_dict['model'] = result[0]
         result_dict['params'] = str(model_params).strip('{').strip('}')
         result_dict['n_folds'] = result[2]
+        
+        metric_name_map = {
+            'mean_absolute_error': 'MAE',
+            'r2_score': 'R2'
+        }
 
-        for k, v in result[4].items():
+        metrics_and_scores = result[4]
+        for k, v in metrics_and_scores.items():
+            if k in metric_name_map:
+                k = metric_name_map[k]
+            
             result_dict[f'{k}_mean'] = np.mean(v)
             result_dict[f'{k}_std'] =  np.std(v)
         
