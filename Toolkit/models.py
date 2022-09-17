@@ -44,6 +44,45 @@ def cross_val(model_and_params, X, y, eval_metric, n_folds = 5, RS=35566):
     total_elapsed_time = time.perf_counter() - start_time
     return model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
 
+def cross_val_class(model_and_params, X, y, eval_metric, n_folds = 5, RS=35566):
+    np.random.seed(RS)
+    get_random = lambda  : np.random.randint(1, 2**16)
+    
+    cv_scores_dict = {}
+    for metric in eval_metric:
+        cv_scores_dict[metric.__name__] = []
+            
+    n_folds_completed = 0
+    
+    start_time = time.perf_counter()
+    
+    # cv = RepeatedStratifiedKFold(n_splits=n_folds, n_repeats=n_fold_repeats, random_state=get_random())
+    cv = KFold(n_splits=n_folds)
+    for i_fold, (idx_train, idx_test) in enumerate(cv.split(X)):
+        X_train, y_train = X.iloc[idx_train], y.iloc[idx_train].values
+        X_test, y_test = X.iloc[idx_test], y.iloc[idx_test].values
+
+        constructor, params_dic = model_and_params
+
+        if 'random_state' in params_dic.keys():
+            params_dic['random_state'] = get_random()
+
+        model = constructor(**params_dic)
+        # all_trained_models.append(model)
+
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        # scores_dict = [ (metric.__name__, metric(y_test, y_pred)) for metric in eval_metric ]
+
+        [ cv_scores_dict[metric.__name__].append(metric(y_test, y_pred)) for metric in eval_metric ]
+        n_folds_completed += 1
+        
+    model_name = model.__class__.__name__
+    model_params = params_dic.copy()
+        
+    total_elapsed_time = time.perf_counter() - start_time
+    return model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
+
 
 def get_stats_df(cv_results):
     ret_list = []
