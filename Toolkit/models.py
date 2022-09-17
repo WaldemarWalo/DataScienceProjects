@@ -3,9 +3,15 @@ import pandas as pd
 import time 
 from IPython.display import clear_output
 
-from sklearn.model_selection import KFold, StratifiedKFold, RepeatedStratifiedKFold
+def cv_classification(model_and_params, cv, X, y, eval_metric, RS=35566):
+    get_score = lambda model, X_test : model.predict_proba(X_test)[:, 1]
+    return cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=get_score)
+                                                     
+def cv_regression(model_and_params, cv, X, y, eval_metric, RS=35566):
+    get_score = lambda model, X_test : model.predict(X_test)
+    return cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=get_score)
 
-def cross_val(model_and_params, X, y, eval_metric, n_folds = 5, RS=35566):
+def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
     np.random.seed(RS)
     get_random = lambda  : np.random.randint(1, 2**16)
     
@@ -16,10 +22,8 @@ def cross_val(model_and_params, X, y, eval_metric, n_folds = 5, RS=35566):
     n_folds_completed = 0
     
     start_time = time.perf_counter()
-    
-    # cv = RepeatedStratifiedKFold(n_splits=n_folds, n_repeats=n_fold_repeats, random_state=get_random())
-    cv = KFold(n_splits=n_folds)
-    for i_fold, (idx_train, idx_test) in enumerate(cv.split(X)):
+
+    for i_fold, (idx_train, idx_test) in enumerate(cv.split(X, y)):
         X_train, y_train = X.iloc[idx_train], y.iloc[idx_train].values
         X_test, y_test = X.iloc[idx_test], y.iloc[idx_test].values
 
@@ -32,9 +36,7 @@ def cross_val(model_and_params, X, y, eval_metric, n_folds = 5, RS=35566):
         # all_trained_models.append(model)
 
         model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        # scores_dict = [ (metric.__name__, metric(y_test, y_pred)) for metric in eval_metric ]
-
+        y_pred = get_score(model, X_test)
         [ cv_scores_dict[metric.__name__].append(metric(y_test, y_pred)) for metric in eval_metric ]
         n_folds_completed += 1
         
@@ -42,44 +44,41 @@ def cross_val(model_and_params, X, y, eval_metric, n_folds = 5, RS=35566):
     model_params = params_dic.copy()
         
     total_elapsed_time = time.perf_counter() - start_time
-    return model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
+    cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
+    return get_stats(cv_results)
 
 
-def get_stats_df(cv_results):
-    ret_list = []
-    
-    for result in cv_results:
-        
-        model_params = result[1]
-        model_params.pop('random_state', None)
-        model_params.pop('silent', None)
-        
-        result_dict = {}
-        result_dict['model'] = result[0]
-        result_dict['params'] = str(model_params).strip('{').strip('}')
-        result_dict['n_folds'] = result[2]
-        
-        metric_name_map = {
-            'mean_absolute_error': 'MAE',
-            'r2_score': 'R2'
-        }
+def get_stats(result):
+    model_params = result[1]
+    model_params.pop('random_state', None)
+    model_params.pop('silent', None)
 
-        metrics_and_scores = result[4]
-        for k, v in metrics_and_scores.items():
-            if k in metric_name_map:
-                k = metric_name_map[k]
-            
-            result_dict[f'{k}_mean'] = np.mean(v)
-            result_dict[f'{k}_std'] =  np.std(v)
-        
-        result_dict['time'] = result[3]
+    result_dict = {}
+    result_dict['model'] = result[0]
+    result_dict['params'] = str(model_params).strip('{').strip('}')
+    result_dict['n_folds'] = result[2]
 
-        ret_list.append(result_dict)
+    metric_name_map = {
+        'mean_absolute_error': 'MAE',
+        'r2_score': 'R2',
+        'roc_auc_score': 'roc_auc'
+    }
+
+    metrics_and_scores = result[4]
+    for k, v in metrics_and_scores.items():
+        if k in metric_name_map:
+            k = metric_name_map[k]
+
+        result_dict[f'{k}_mean'] = np.mean(v)
+        result_dict[f'{k}_std'] =  np.std(v)
+
+    result_dict['time'] = result[3]
         
-    return pd.DataFrame(ret_list)
+    return result_dict
     
 
-def display_stats(df_stats, clear=True):
+def display_stats(stats, clear=True):
+    df_stats = pd.DataFrame(stats)
     styler = df_stats.style
     styler.format('{:,.1f}', 'time')\
           .bar(subset='time')
@@ -93,7 +92,7 @@ def display_stats(df_stats, clear=True):
         if _range < 1:
             styler.format('{:.3f}', c)
         elif _range < 10:
-            styler.format('{:.1f}', c)
+            styler.format('{:.2f}', c)
         # elif _range > 10:
         #     styler.format('{:.0f}', c)
         else:
@@ -105,7 +104,6 @@ def display_stats(df_stats, clear=True):
     
     
 ## Preprocessing
-
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 def ordinalEncode(df, cols):
     for col in cols:
