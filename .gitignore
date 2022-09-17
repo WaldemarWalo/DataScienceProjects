@@ -1,7 +1,8 @@
 # Custom
 .DS_Store
-data-raw
-data-processed
+data-raw/
+data-processed/
+catboost_info/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
