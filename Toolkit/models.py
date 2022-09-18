@@ -49,10 +49,12 @@ def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
 
 
 def get_stats(result):
+    params_to_ignore = ['random_state', 'silent', 'allow_writing_files']
+    
     model_params = result[1]
-    model_params.pop('random_state', None)
-    model_params.pop('silent', None)
-
+    for param in params_to_ignore:
+        model_params.pop(param, None)
+    
     result_dict = {}
     result_dict['model'] = result[0]
     result_dict['params'] = str(model_params).strip('{').strip('}')
@@ -60,8 +62,9 @@ def get_stats(result):
 
     metric_name_map = {
         'mean_absolute_error': 'MAE',
+        'root_mean_squared_error': 'RMSE',
         'r2_score': 'R2',
-        'roc_auc_score': 'roc_auc'
+        'roc_auc_score': 'ROC_AUC'
     }
 
     metrics_and_scores = result[4]
@@ -93,8 +96,6 @@ def display_stats(stats, clear=True):
             styler.format('{:.3f}', c)
         elif _range < 10:
             styler.format('{:.2f}', c)
-        # elif _range > 10:
-        #     styler.format('{:.0f}', c)
         else:
             styler.format('{:.0f}', c)
             
@@ -120,3 +121,18 @@ def oh_encode(df, cols, drop_encoded=True):
             
 def mad(s):
     return (s - s.mean() ).abs().mean()
+
+from sklearn.metrics import mean_squared_error
+def root_mean_squared_error(y_true, y_pred):
+    return mean_squared_error(y_true, y_pred, squared=False)
+
+from sklearn.preprocessing import PolynomialFeatures
+def polynomialFeatures(X, degree):
+    pf = PolynomialFeatures(degree = degree)
+    X_poly = pf.fit_transform(X)
+    return pd.DataFrame(
+        columns = pf.get_feature_names_out(), 
+        index = X.index, 
+        data = X_poly
+    )
+
