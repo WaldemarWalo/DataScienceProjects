@@ -118,8 +118,5 @@ def oh_encode(df, cols, drop_encoded=True):
         if drop_encoded:
             df.drop(col, axis=1, inplace=True)
             
-        
-    
-    
-    
-    
+def mad(s):
+    return (s - s.mean() ).abs().mean()

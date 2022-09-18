@@ -54,3 +54,13 @@ def grid_exec(func, *args, on1Completed=None):
         if on1Completed:
             on1Completed(all_results)
     return all_results
+
+def pipe(*func):
+    def compose(x):
+        for f in func:
+            x = f(x)
+        return x
+    
+    compose_func = compose
+    compose_func.__name__ = f'{" -> ".join([f.__name__ for f in func])}'
+    return compose_func
