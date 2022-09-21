@@ -47,7 +47,13 @@ def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
     cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
     return get_stats(cv_results)
 
-
+metric_name_map = {
+    'mean_absolute_error': 'MAE',
+    'root_mean_squared_error': 'RMSE',
+    'r2_score': 'R2',
+    'roc_auc_score': 'ROC_AUC'
+}
+    
 def get_stats(result):
     params_to_ignore = ['random_state', 'silent', 'allow_writing_files']
     
@@ -59,13 +65,6 @@ def get_stats(result):
     result_dict['model'] = result[0]
     result_dict['params'] = str(model_params).strip('{').strip('}')
     result_dict['n_folds'] = result[2]
-
-    metric_name_map = {
-        'mean_absolute_error': 'MAE',
-        'root_mean_squared_error': 'RMSE',
-        'r2_score': 'R2',
-        'roc_auc_score': 'ROC_AUC'
-    }
 
     metrics_and_scores = result[4]
     for k, v in metrics_and_scores.items():
@@ -80,25 +79,45 @@ def get_stats(result):
     return result_dict
     
 
-def display_stats(stats, clear=True):
+def display_stats(stats, clear=True, reverse_rank_idx=[]):
+    metrics_start_col_idx = 3
     df_stats = pd.DataFrame(stats)
-    styler = df_stats.style
-    styler.format('{:,.1f}', 'time')\
-          .bar(subset='time')
+    metrics_menstd_cols = df_stats.columns[metrics_start_col_idx: -1]
+    rank_cols = []
 
-    for c in df_stats.columns[3: -1]:
+    for i_metric, metric_col in enumerate(metrics_menstd_cols[::2]):
+        metric_col_idx = df_stats.columns.get_loc(metric_col)
+
+        rank_col_idx = metric_col_idx + 2
+        rank_col_name = f'#{i_metric + 1}'
+        rank_cols.append(rank_col_name)
+        
+        if i_metric in reverse_rank_idx:
+            df_stats.insert(rank_col_idx, rank_col_name, df_stats[metric_col].rank(ascending=False).astype(int))
+        else:
+            df_stats.insert(rank_col_idx, rank_col_name, df_stats[metric_col].rank().astype(int))
+    
+    styler = df_stats.style
+
+    for c in metrics_menstd_cols:
         gmap = df_stats[c].rank()
         vmin = -0.1 * gmap.max()
-        styler.background_gradient(cmap='Blues', subset=c, gmap=gmap, vmin=vmin)
-        
+        _ = styler.background_gradient(cmap='Blues', subset=c, gmap=gmap, vmin=vmin)
+
         _range = df_stats[c].max() - df_stats[c].min()
+        _range
         if _range < 1:
             styler.format('{:.3f}', c)
         elif _range < 10:
             styler.format('{:.2f}', c)
         else:
             styler.format('{:.0f}', c)
-            
+
+    for c in rank_cols:
+        _ = styler.background_gradient(cmap='Oranges', subset=c, vmin=-2)
+        
+    styler.format('{:,.1f}', 'time').bar(subset='time')
+    
     if clear:
         clear_output(wait=True)
     display(styler)
