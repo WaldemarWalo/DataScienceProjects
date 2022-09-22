@@ -51,8 +51,13 @@ def grid_exec(func, *args, on1Completed=None):
     for param_product in itertools.product(*args):
         result = func(*param_product) 
         all_results.append(result)
+        
         if on1Completed:
-            on1Completed(all_results)
+            if type(on1Completed) is list:
+                for cb in on1Completed:
+                    cb(all_results)
+            else: on1Completed(all_results)
+            
     return all_results
 
 def pipe(*func):

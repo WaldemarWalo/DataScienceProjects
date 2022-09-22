@@ -15,6 +15,8 @@ def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
     np.random.seed(RS)
     get_random = lambda  : np.random.randint(1, 2**16)
     
+    all_trained_models = []
+    
     cv_scores_dict = {}
     for metric in eval_metric:
         cv_scores_dict[metric.__name__] = []
@@ -33,7 +35,7 @@ def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
             params_dic['random_state'] = get_random()
 
         model = constructor(**params_dic)
-        # all_trained_models.append(model)
+        all_trained_models.append(model)
 
         model.fit(X_train, y_train)
         y_pred = get_score(model, X_test)
@@ -44,7 +46,7 @@ def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
     model_params = params_dic.copy()
         
     total_elapsed_time = time.perf_counter() - start_time
-    cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
+    cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict, all_trained_models, all_trained_models
     return get_stats(cv_results)
 
 metric_name_map = {
@@ -75,13 +77,14 @@ def get_stats(result):
         result_dict[f'{k}_std'] =  np.std(v)
 
     result_dict['time'] = result[3]
-        
+    result_dict['models'] = result[-1]
     return result_dict
     
 
 def display_stats(stats, clear=True, reverse_rank_idx=[]):
+    df_stats = pd.DataFrame(stats).drop(columns = 'models')
+    
     metrics_start_col_idx = 3
-    df_stats = pd.DataFrame(stats)
     metrics_menstd_cols = df_stats.columns[metrics_start_col_idx: -1]
     rank_cols = []
 
