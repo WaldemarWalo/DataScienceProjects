@@ -4,15 +4,15 @@ import time
 from IPython.display import clear_output
 import matplotlib.pyplot as plt
 
-def cv_classification(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = None, RS=35566):
+def cv_classification(model_and_params, cv, X, y, eval_metric, trained_model_return_list = None, y_pred_list = None, RS=35566):
     get_score = lambda model, X_test : model.predict_proba(X_test)[:, 1]
-    return cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list, RS=35566, get_score=get_score)
+    return cv_base(model_and_params, cv, X, y, eval_metric, trained_model_return_list, y_pred_list, RS=RS, get_score=get_score)
                                                      
-def cv_regression(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = None, RS=35566):
+def cv_regression(model_and_params, cv, X, y, eval_metric, trained_model_return_list = None, y_pred_list = None, RS=35566):
     get_score = lambda model, X_test : model.predict(X_test)
-    return cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list, RS=35566, get_score=get_score)
+    return cv_base(model_and_params, cv, X, y, eval_metric, trained_model_return_list, y_pred_list, RS=RS, get_score=get_score)
 
-def cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = None, RS=35566, get_score=None):
+def cv_base(model_and_params, cv, X, y, eval_metric, trained_model_return_list = None, y_pred_list = None, RS=35566, get_score=None):
     np.random.seed(RS)
     get_random = lambda  : np.random.randint(1, 2**16)
     
@@ -42,10 +42,12 @@ def cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = N
         y_pred = get_score(model, X_test)
         [ cv_scores_dict[metric.__name__].append(metric(y_test, y_pred)) for metric in eval_metric ]
         
-        y_pred_ser = pd.Series(index = X_test.index, data=y_pred, name=f'fold_{i_fold}')
-        # trained_models_and_y_pred.append((model, y_pred_ser))
         trained_models_and_y_pred.append(model)
         n_folds_completed += 1
+        
+        if y_pred_list is not None:
+            y_pred_ser = pd.Series(index = X_test.index, data=y_pred, name=f'fold_{i_fold}')
+            y_pred_list.append(y_pred_ser)
         
     model_name = model.__class__.__name__
     model_params = params_dic.copy()
@@ -53,9 +55,10 @@ def cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = N
     total_elapsed_time = time.perf_counter() - start_time
     cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
     
-    if model_ypred_return_list is not None:
-        print('model_ypred_return_list')
-        model_ypred_return_list.append(trained_models_and_y_pred)
+    if trained_model_return_list is not None:
+        trained_model_return_list.append(trained_models_and_y_pred)
+    
+
         
     return get_stats(cv_results)
 
