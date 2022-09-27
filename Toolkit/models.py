@@ -2,20 +2,21 @@ import numpy as np
 import pandas as pd
 import time 
 from IPython.display import clear_output
+import matplotlib.pyplot as plt
 
-def cv_classification(model_and_params, cv, X, y, eval_metric, RS=35566):
+def cv_classification(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = None, RS=35566):
     get_score = lambda model, X_test : model.predict_proba(X_test)[:, 1]
-    return cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=get_score)
+    return cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list, RS=35566, get_score=get_score)
                                                      
-def cv_regression(model_and_params, cv, X, y, eval_metric, RS=35566):
+def cv_regression(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = None, RS=35566):
     get_score = lambda model, X_test : model.predict(X_test)
-    return cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=get_score)
+    return cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list, RS=35566, get_score=get_score)
 
-def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
+def cv_base(model_and_params, cv, X, y, eval_metric, model_ypred_return_list = None, RS=35566, get_score=None):
     np.random.seed(RS)
     get_random = lambda  : np.random.randint(1, 2**16)
     
-    all_trained_models = []
+    trained_models_and_y_pred = []
     
     cv_scores_dict = {}
     for metric in eval_metric:
@@ -35,18 +36,27 @@ def cv_base(model_and_params, cv, X, y, eval_metric, RS=35566, get_score=None):
             params_dic['random_state'] = get_random()
 
         model = constructor(**params_dic)
-        all_trained_models.append(model)
+        
 
         model.fit(X_train, y_train)
         y_pred = get_score(model, X_test)
         [ cv_scores_dict[metric.__name__].append(metric(y_test, y_pred)) for metric in eval_metric ]
+        
+        y_pred_ser = pd.Series(index = X_test.index, data=y_pred, name=f'fold_{i_fold}')
+        # trained_models_and_y_pred.append((model, y_pred_ser))
+        trained_models_and_y_pred.append(model)
         n_folds_completed += 1
         
     model_name = model.__class__.__name__
     model_params = params_dic.copy()
         
     total_elapsed_time = time.perf_counter() - start_time
-    cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict, all_trained_models, all_trained_models
+    cv_results = model_name, model_params, n_folds_completed, total_elapsed_time, cv_scores_dict
+    
+    if model_ypred_return_list is not None:
+        print('model_ypred_return_list')
+        model_ypred_return_list.append(trained_models_and_y_pred)
+        
     return get_stats(cv_results)
 
 metric_name_map = {
@@ -77,15 +87,15 @@ def get_stats(result):
         result_dict[f'{k}_std'] =  np.std(v)
 
     result_dict['time'] = result[3]
-    result_dict['models'] = result[-1]
+    # result_dict['models_and_pred'] = result[-1]
     return result_dict
     
 
-def display_stats(stats, clear=True, reverse_rank_idx=[]):
-    df_stats = pd.DataFrame(stats).drop(columns = 'models')
+def display_stats(df_stats, clear=True, reverse_rank_idx=[]):
+    # df_stats = pd.DataFrame(stats).drop(columns = 'models_and_pred', errors='ignore')
     
     metrics_start_col_idx = 3
-    metrics_menstd_cols = df_stats.columns[metrics_start_col_idx: -1]
+    metrics_menstd_cols = df_stats.columns[metrics_start_col_idx: df_stats.columns.get_loc('time')]
     rank_cols = []
 
     for i_metric, metric_col in enumerate(metrics_menstd_cols[::2]):
@@ -109,12 +119,13 @@ def display_stats(stats, clear=True, reverse_rank_idx=[]):
 
         _range = df_stats[c].max() - df_stats[c].min()
         _range
-        if _range < 1:
-            styler.format('{:.3f}', c)
-        elif _range < 10:
-            styler.format('{:.2f}', c)
-        else:
-            styler.format('{:.0f}', c)
+        styler.format('{:.3f}', c)
+        # if _range < 10:
+        #     styler.format('{:.3f}', c)
+        # elif _range < 100:
+        #     styler.format('{:.2f}', c)
+        # else:
+        #     styler.format('{:.0f}', c)
 
     for c in rank_cols:
         _ = styler.background_gradient(cmap='Oranges', subset=c, vmin=-2)
@@ -157,4 +168,42 @@ def polynomialFeatures(X, degree):
         index = X.index, 
         data = X_poly
     )
+
+def get_fe_df(list_of_list_of_models):
+    df_all_fe = []
+    
+    for i, models_to_analyse in enumerate(list_of_list_of_models):
+        feature_imp_for_model = []
+
+        for j, m in enumerate(models_to_analyse):
+            model_short_name = ''.join([l for l in m.__class__.__name__ if l.isupper()])
+
+            if hasattr(m, 'feature_names_in_'):
+                feature_names = m.feature_names_in_
+            elif hasattr(m, 'feature_name_'):
+                feature_names = m.feature_name_
+            else:
+                feature_names = m.feature_names_
+
+            feature_imp_for_model.append(
+                pd.Series(index = feature_names, data = m.feature_importances_, name=f'{model_short_name}_{i}_{j}')
+            )
+
+        df_f_imp = pd.concat(feature_imp_for_model, axis=1)
+        df_f_imp[f'{model_short_name}_{i}_sum'] = df_f_imp.sum(axis=1)
+        df_f_imp[f'{model_short_name}_{i}_rank'] = df_f_imp[f'{model_short_name}_{i}_sum'].rank().astype(int)
+
+        df_all_fe.append(df_f_imp)
+        df_final_fe = pd.concat(df_all_fe, axis=1)
+        
+    sum_cols = [col for col in df_final_fe.columns if col.endswith('_rank')]
+    # df_final_fe['sum'] = df_final_fe[sum_cols].sum(axis=1)
+    df_final_fe['sum_rank'] = df_final_fe[sum_cols].sum(axis=1).astype(int)
+    df_final_fe = df_final_fe.sort_values(by='sum_rank', ascending=False)
+
+
+    rank_cols = [col for col in df_final_fe.columns if col.endswith('_rank')]
+    styler = df_final_fe[rank_cols].style
+    styler.background_gradient(subset=rank_cols, cmap=plt.cm.Oranges, vmin=-5)
+    return styler
 
