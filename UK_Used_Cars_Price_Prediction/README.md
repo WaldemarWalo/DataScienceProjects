@@ -1,4 +1,4 @@
-# Title: Price Prediction for used Cars
+# Title: UK Used Cars Price Prediction
 
 ## Brief Summary:
 - Price prediction for selected model and make from a dataset of used cars for 8 makes and 196 car models. The full dataset contains 100k car listings and 9 features.

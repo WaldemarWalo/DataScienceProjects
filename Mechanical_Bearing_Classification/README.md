@@ -1,4 +1,4 @@
-# Title: Detecting defected mechanical bearings
+# Title: Mechanical Bearings Classification
 
 ## Brief Summary:
 - Unbalanced, binary classification of mechanical bearing based on features from accelerometer data and DC motor. Dataset with 10 million records and 14 features
