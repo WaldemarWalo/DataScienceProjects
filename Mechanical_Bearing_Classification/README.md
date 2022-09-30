@@ -27,6 +27,7 @@ The goal of this project is to detect defective mechanical bearings with feature
     - frequency (Hz)
     - power usage in Watts (w)
     - status - binary labels classifying bearing_2 as: 0 - defective, 1 - good
+<img src='./_figs/exp_clust.png' width=800 />
 
 ## EDA findings:
 - the Hz feature has the same information as rpm and will be dropped

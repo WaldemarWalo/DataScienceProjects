@@ -6,7 +6,7 @@ This repository hosts all my public Data Science Projects:
 - Feature engineering with clustering, grouping data by experiment and extracting distribution properties: sum, mean, median, skew, kurtosis, iqr and others
 - Achieved roc_auc score of 0.9959 with an AdaBoost and RepeatStratifiedKfold. Clustered created features with GausianMixture to achieve an Adjusted RAND score of 0.76
 
-<img src='./Mechanical_Bearing_Classification/_figs/exp.png' width=600 />
+<img src='./Mechanical_Bearing_Classification/_figs/exp_clust.png' width=800 />
 
 2. [UK Used Cars Price Prediction](https://github.com/WaldemarWalo/DataScienceProjects/tree/main/UK_Used_Cars_Price_Prediction)
 - Price prediction for selected model and make from a dataset of used cars for 8 makes and 196 car models. The full dataset contains 100k car listings and 9 features.
