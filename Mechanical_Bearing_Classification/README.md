@@ -11,6 +11,8 @@ The goal of this project is to detect defective mechanical bearings with feature
     1. the bearings are accelerated from 0 to 1500 rpm
     2. rpm is held at 1500 for 10 seconds 
     3. rpm is decreased to 250
+    
+<img src='./_figs/experiment_desc.jpg' width=500/>
 
 ## Dataset:
 - this is a public Dataset available on [Kaggle](https://www.kaggle.com/datasets/isaienkov/bearing-classification)
@@ -35,9 +37,14 @@ The goal of this project is to detect defective mechanical bearings with feature
 - this is also confirmed by the pairplot for the xyz axis for both types of bearings
 - xyz variance is positively correlated with rpm
 - not all data points start at the same time, rpm does not always start from 0, and the duration of the 3 phases of the experiment is not always the same
+<img src='./_figs/dist.png' width=600 />
+<img src='./_figs/relplot.png' width=600/>
+
 
 ## Cross Validation:
-- for this dataset, I've used RepeatedStratifiedKFold with groups as the binary target to ensure that each fold will have an equal number of positive and negative samples and prevent model bias
+- for this dataset, I've used RepeatedStratifiedKFold with groups as the binary target to ensure that each fold will have an equal number of positive and negative samples and prevent model bias.
+
+<img src='./_figs/cv.png' width=800/>
 
 ## Feature Engineering:
 - I've created a dataset with 200 bearings, 100 unique faulty bearings from slot 2, 12 unique good bearings from slot 2
@@ -45,10 +52,16 @@ The goal of this project is to detect defective mechanical bearings with feature
 - Clustering: I've used GaussianMixture to identify the 3 stages of the experiment by splitting the rpm and timestamp features
 - the final dataset for training was created by grouping the data by experiment_id and extracting distribution properties: sum, mean, median, skew, kurtosis, iqr and a few other
 
+<img src='./_figs/rpm_cluster.png' width=800/>
+
 ## Modeling
 - Initial CV score of the below models produced roc_auc score above 0.9
 - shortlisted best classifiers :AdaBoostClassifier, CatBoostClassifier and LGBMClassifier produced score of 0.986
+<img src='./_figs/model1.png' width=800/>
 - Removing features based on feature_importance gave the best  roc_auc score of 0.995 with AdaBoost
+<img src='./_figs/model995.png' width=800/>
+ 
+
 
 
 ## Clustering
