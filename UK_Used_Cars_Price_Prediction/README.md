@@ -21,13 +21,16 @@ The goal of this project is to predict the price of a car based on 9 features. T
 - there are no missing values
 - mpg has many invalid values, especially around hybrids and electric vehicles
 
+<img src='./_figs/EDA1.png' width=600 />
+<img src='./_figs/EDA2.png' width=600 />
+
 ## Transformations:
 - Unify the 'tax' column within makes
 - Drop 1475 duplicates
 - Strip whitespaces from model names
 - drop 9 listings with 'transmission' = 'Other'
 - drop 252 listings with 'fuelType' = 'Other' or 'Electric'
-- drop 265 listings with 'engineSize'] = 0
+- drop 265 listings with 'engineSize' = 0
 - drop cars produced before 1990 and with invalid production year > 2022
 
 ## Feature Engineering:
@@ -44,4 +47,7 @@ The goal of this project is to predict the price of a car based on 9 features. T
 - I've utilized the PolynomialFeatures to create a new feature matrix with 2 to 5 degrees
 - new features were scaled and passed to SelectKBest to select up to 200 best features
 - evaluated Linear Regression, Lasso and Ridge with multiple alpha values. Ridge gave the best R2 score of 0.864
+<img src='./_figs/model-linear.png' width=600 />
+
 - evaluated multiple tree models and achieved an R2 score of 0.885 with CatBoostRegressor
+<img src='./_figs/model-tree.png' width=800 />
