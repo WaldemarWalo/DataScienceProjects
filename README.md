@@ -17,4 +17,4 @@ This repository hosts all my public Data Science Projects:
 3. [Toolkit](https://github.com/WaldemarWalo/DataScienceProjects/tree/main/Toolkit) - small library with small reusable functions that I found missing in available frameworks
 
 You can connect with me on 
-[LinkedIn](https://www.linkedin.com/in/waldemar-walo/) or find me on [Kaggle](https://www.linkedin.com/in/waldemar-walo/)
+[LinkedIn](https://www.linkedin.com/in/waldemar-walo/) or find me on [Kaggle](https://www.kaggle.com/waldemar)
